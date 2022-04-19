@@ -1,0 +1,72 @@
+{{- $values := $.Values }}
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: {{ include "node-ulimit-config.fullname" . }}
+  labels:
+    {{- include "node-ulimit-config.labels" . | nindent 4 }}
+spec:
+  selector:
+    matchLabels:
+      {{- include "node-ulimit-config.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with $values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "node-ulimit-config.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with $values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "node-ulimit-config.serviceAccountName" . }}
+      {{- with $values.podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      # initContainers:
+      #   - name: ulimit-config
+      #     image: busybox:stable
+      #     imagePullPolicy: IfNotPresent
+      #     # command: ["sh", "-c", "set -ex; ulimit -n 65536; ulimit -a;"]
+      #     securityContext:
+      #       privileged: true # required for ulimit change
+      #     command:
+      #       - sh
+      #       - -c
+      #       - >-
+      #         set -ex;
+      #         {{- range $opt, $val := $values.ulimit }}
+      #         ulimit {{ $opt }} {{ $val }};
+      #         {{- end }}
+      #         ulimit -Ha;
+      #         ulimit -Sa;
+      #     resources:
+      containers:
+        - name: pause
+          # image: gcr.io/google_containers/pause:3.2
+          image: busybox:stable
+          command: [/bin/sleep, "1000000"]
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            privileged: true
+          #   capabilities:
+          #     drop:
+          #       - ALL
+          resources:
+            {{- toYaml $values.resources | nindent 12 }}
+      {{- with $values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with $values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with $values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
