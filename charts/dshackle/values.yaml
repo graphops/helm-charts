@@ -125,6 +125,8 @@ upstreams:
         - name: "trace_filter"
 
 extraConfig: {}
+  # proxy:
+  #   websocket: true
   #### DSHACKLE QUESTIONS
   # - labels? matching? how?
   ###### passed via grpc
