@@ -1,0 +1,144 @@
+# Default values for dshackle.
+# This is a YAML-formatted file.
+
+nameOverride: ""
+fullnameOverride: ""
+
+image:
+  # -- Image for Dshackle
+  repository: emeraldpay/dshackle
+  pullPolicy: IfNotPresent
+  # -- Overrides the image tag
+  # @default -- Chart.appVersion
+  tag: ""
+
+# -- Pull secrets required to fetch the Image
+imagePullSecrets: []
+
+serviceAccount:
+  # -- Specifies whether a service account should be created
+  create: true
+  # -- Annotations to add to the service account
+  annotations: {}
+  # -- The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+
+prometheus:
+  podMonitors:
+    # -- Enable monitoring by creating `PodMonitor` CRDs ([prometheus-operator](https://github.com/prometheus-operator/prometheus-operator))
+    enabled: false
+    labels: {}
+    interval:
+    scrapeTimeout:
+    relabelings: []
+
+grafana:
+  # -- Enable creation of Grafana dashboards. [Grafana chart](https://github.com/grafana/helm-charts/tree/main/charts/grafana#grafana-helm-chart) must be configured to search this namespace, see `sidecar.dashboards.searchNamespace`
+  dashboards: false
+  # -- Must match `sidecar.dashboards.label` value for the [Grafana chart](https://github.com/grafana/helm-charts/tree/main/charts/grafana#grafana-helm-chart)
+  dashboardsConfigMapLabel: grafana_dashboard
+  # -- Must match `sidecar.dashboards.labelValue` value for the [Grafana chart](https://github.com/grafana/helm-charts/tree/main/charts/grafana#grafana-helm-chart)
+  dashboardsConfigMapLabelValue: ""
+
+# -- Extra arguments for DShackle
+extraArgs: []
+
+# Increasing the grace termination period prevents Kubernetes
+# from killing the node process prematurely. Premature shutdown
+# can lead to data integrity issues
+# -- Amount of time to wait before force-killing containers
+terminationGracePeriodSeconds: 30
+
+# -- Annotations for the `Pod`
+podAnnotations: {}
+
+# -- Pod-wide security context
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 101337
+  runAsGroup: 101337
+  fsGroup: 101337
+
+service:
+  type: ClusterIP
+  ports:
+    # Valid keys are names of ports that are exposed by the Pod that (see templates/stateful-node/statefulset.yaml)
+    # -- Service Port to expose the JSON-RPC API on
+    http-jsonrpc: 8545
+    # -- Service Port to expose the Dshackle gRPC API on
+    grpc-dshackle: 2449
+
+resources: {}
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  # limits:
+  #   cpu: 100m
+  #   memory: 128Mi
+  #   ephemeral-storage: 100Mi
+  # requests:
+  #   cpu: 100m
+  #   memory: 128Mi
+  #   ephemeral-storage: 100Mi
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+lruCache:
+  # -- Enable deploying a Redis-powered LRU cache sidecar alongside Dshackle
+  enabled: true
+  # -- Maximum size of the LRU cache in gigabytes. This must fit in-memory. 
+  cacheSizeGB: 1
+  image:
+    # -- Image for Redis
+    repository: redis
+    pullPolicy: IfNotPresent
+    tag: "6.2.6"
+  resources: {}
+
+chainType: "ethereum"
+chainAlias: "alias"
+
+upstreams:
+  - id: local
+    role: standard # or fallback
+    chain: ethereum
+    labels: {}
+    connection:
+      ethereum:
+        rpc:
+          url: "http://eth-mainnet-erigon-rpcdaemons:8545"
+        ws:
+          url: "ws://eth-mainnet-erigon-rpcdaemons:8545"
+          frameSize: 32mb
+          msgSize: 256mb
+    methods:
+      enabled:
+        - name: eth_chainId
+          static: "0x1"
+        - name: "eth_getLogs"
+        - name: "trace_filter"
+
+extraConfig: {}
+  #### DSHACKLE QUESTIONS
+  # - labels? matching? how?
+  ###### passed via grpc
+  # - specfiying prune options for node
+  ###### not possible today, assumes that all nodes are archive nodes
+  # - specifying capabilities for node (archive, trace, etc) outside of methods
+  ###### via methods
+  # - quorum options: lb vs race vs full quorum vs failover conditions (not_lagging, not_empty, etc)
+  ###### quirum of reponse not possible today but implementable
+  # - prometheus metrics for cache hits, efficiency, expiry, etc
+  ###### metrics for monitoring aren't great, this is an area to contribute
+  # - prometheus # of requests to different underlying nodes vs dshackle API
+  ###### THIS IS THERE
+  # - latency/load monitoring and factoring into traffic distribution
+  ###### this does not exist today, but could be added in a basic form with upstream weights
+  # - other chain support + mapping different chains of the same type to different upstreams/endpoints
+  ###### 

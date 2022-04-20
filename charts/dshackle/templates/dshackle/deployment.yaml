@@ -1,0 +1,115 @@
+{{- $values := $.Values }}
+{{- $componentName := "server" }}
+{{- $componentLabel := include "dshackle.componentLabelFor" $componentName }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "dshackle.fullname" . }}-{{ $componentName }}
+  labels:
+    {{- include "dshackle.labels" . | nindent 4 }}
+    {{- $componentLabel | nindent 4 }}
+spec:
+  replicas: {{ $values.replicaCount | default 1 }}
+  selector:
+    matchLabels:
+      {{- include "dshackle.selectorLabels" . | nindent 6 }}
+      {{- $componentLabel | nindent 6 }}
+  template:
+    metadata:
+      annotations:
+        # ConfigMap change -> checksum annotation change -> rollout of Pod to ensure config changes are reflected
+        checksum/config: {{ include (print $.Template.BasePath "/dshackle/configmap.yaml") . | sha256sum }}
+        {{- with $values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      labels:
+        {{- include "dshackle.selectorLabels" . | nindent 8 }}
+        {{- $componentLabel | nindent 8 }}
+    spec:
+      {{- with $values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "dshackle.serviceAccountName" . }}
+      {{- with $values.podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      terminationGracePeriodSeconds: {{ $values.terminationGracePeriodSeconds | default "30" }}
+      volumes:
+        - name: config
+          configMap:
+            name: {{ include "dshackle.fullname" . }}-{{ $componentName }}
+      containers:
+        - name: {{ .Chart.Name }}-{{ $componentName }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          securityContext:
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          {{- with $values.extraArgs }}
+          command:
+            {{- toYaml (. | default list) | nindent 12 }}
+          {{- end }}
+          volumeMounts:
+            - name: config
+              mountPath: "/etc/dshackle"
+              readOnly: true
+          ports:
+            - name: http-jsonrpc
+              containerPort: 8545
+              protocol: TCP
+            - name: http-metrics
+              containerPort: 8081
+              protocol: TCP
+            - name: http-health
+              containerPort: 8082
+              protocol: TCP
+            - name: grpc-dshackle
+              containerPort: 2449
+              protocol: TCP
+          readinessProbe:
+            httpGet:
+              port: http-health
+              path: /health
+          resources:
+            {{- toYaml $values.resources | nindent 12 }}
+        {{- if $values.lruCache }}
+        - name: {{ .Chart.Name }}-{{ $componentName }}-redis
+          image: "{{ $values.lruCache.image.repository }}:{{ $values.lruCache.image.tag }}"
+          imagePullPolicy: {{ $values.lruCache.image.pullPolicy }}
+          securityContext:
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          command:
+            - redis-server
+            - --save "" # disable persistence
+            - --appendonly no # disable persistence
+            - --maxmemory-policy allkeys-lru # lru cache mode
+            - --maxmemory {{ $values.lruCache.cacheSizeGB }}gb
+          readinessProbe:
+            exec:
+              command:
+              - redis-cli
+              - ping
+          {{- with $values.lruCache.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+        {{- end }}
+      {{- with $values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with $values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with $values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

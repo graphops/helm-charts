@@ -1,0 +1,55 @@
+{{- $values := $.Values }}
+{{- $componentName := "server" }}
+{{- $componentLabel := include "dshackle.componentLabelFor" $componentName }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "dshackle.fullname" . }}-{{ $componentName }}
+  labels:
+    {{- include "dshackle.labels" . | nindent 4 }}
+    {{- $componentLabel | nindent 4 }}
+data:
+  dshackle.yaml: |
+    host: 0.0.0.0
+    port: 2449
+
+    monitoring:
+      enabled: true
+      jvm: false
+      extended: false
+      prometheus:
+        enabled: true
+        bind: 0.0.0.0
+        port: 8081
+        path: /metrics
+
+    health:
+      port: 8082
+      host: 0.0.0.0
+      path: /health
+      blockchains:
+        - chain: {{ $values.chainType }}
+          min-availability: 1
+
+    cache:
+      redis:
+        enabled: {{ $values.lruCache.enabled }}
+        host: 127.0.0.1
+        port: 6379
+        db: 0
+
+    proxy:
+      host: 0.0.0.0
+      port: 8545
+      websocket: false
+      routes:
+        - id: {{ $values.chainAlias }}
+          blockchain: {{ $values.chainType }}
+
+    cluster:
+      upstreams:
+        {{ toYaml $values.upstreams | nindent 8 }}
+
+    {{- with $values.extraConfig }}
+    {{ toYaml . | nindent 4 }}
+    {{- end }}
