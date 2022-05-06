@@ -25,8 +25,8 @@ serviceAccount:
   name: ""
 
 prometheus:
-  podMonitors:
-    # -- Enable monitoring by creating `PodMonitor` CRDs ([prometheus-operator](https://github.com/prometheus-operator/prometheus-operator))
+  serviceMonitors:
+    # -- Enable monitoring by creating `ServiceMonitor` CRDs ([prometheus-operator](https://github.com/prometheus-operator/prometheus-operator))
     enabled: false
     labels: {}
     interval:
@@ -91,9 +91,9 @@ affinity: {}
 
 lruCache:
   # -- Enable deploying a Redis-powered LRU cache sidecar alongside Dshackle
-  enabled: true
+  enabled: false
   # -- Maximum size of the LRU cache in gigabytes. This must fit in-memory. 
-  cacheSizeGB: 1
+  cacheSizeGB: 2
   image:
     # -- Image for Redis
     repository: redis
@@ -102,27 +102,27 @@ lruCache:
   resources: {}
 
 chainType: "ethereum"
-chainAlias: "alias"
+chainAlias: "ethereum"
 
-upstreams:
-  - id: local
-    role: standard # or fallback
-    chain: ethereum
-    labels: {}
-    connection:
-      ethereum:
-        rpc:
-          url: "http://eth-mainnet-erigon-rpcdaemons:8545"
-        ws:
-          url: "ws://eth-mainnet-erigon-rpcdaemons:8545"
-          frameSize: 32mb
-          msgSize: 256mb
-    methods:
-      enabled:
-        - name: eth_chainId
-          static: "0x1"
-        - name: "eth_getLogs"
-        - name: "trace_filter"
+upstreams: []
+  # - id: local
+  #   role: standard # or fallback
+  #   chain: ethereum
+  #   labels: {}
+  #   connection:
+  #     ethereum:
+  #       rpc:
+  #         url: "http://eth-mainnet-erigon-rpcdaemons:8545"
+  #       ws:
+  #         url: "ws://eth-mainnet-erigon-rpcdaemons:8545"
+  #         frameSize: 32mb
+  #         msgSize: 256mb
+  #   methods:
+  #     enabled:
+  #       - name: eth_chainId
+  #         static: "0x1"
+  #       - name: "eth_getLogs"
+  #       - name: "trace_filter"
 
 extraConfig: {}
   # proxy:

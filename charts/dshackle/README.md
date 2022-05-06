@@ -35,7 +35,7 @@ We do not recommend that you upgrade the application by overriding `image.tag`. 
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
 | affinity | object | `{}` |  |
-| chainAlias | string | `"alias"` |  |
+| chainAlias | string | `"ethereum"` |  |
 | chainType | string | `"ethereum"` |  |
 | extraArgs | list | `[]` | Extra arguments for DShackle |
 | extraConfig | object | `{}` |  |
@@ -47,8 +47,8 @@ We do not recommend that you upgrade the application by overriding `image.tag`. 
 | image.repository | string | `"emeraldpay/dshackle"` | Image for Dshackle |
 | image.tag | string | Chart.appVersion | Overrides the image tag |
 | imagePullSecrets | list | `[]` | Pull secrets required to fetch the Image |
-| lruCache.cacheSizeGB | int | `1` | Maximum size of the LRU cache in gigabytes. This must fit in-memory.  |
-| lruCache.enabled | bool | `true` | Enable deploying a Redis-powered LRU cache sidecar alongside Dshackle |
+| lruCache.cacheSizeGB | int | `2` | Maximum size of the LRU cache in gigabytes. This must fit in-memory.  |
+| lruCache.enabled | bool | `false` | Enable deploying a Redis-powered LRU cache sidecar alongside Dshackle |
 | lruCache.image.pullPolicy | string | `"IfNotPresent"` |  |
 | lruCache.image.repository | string | `"redis"` | Image for Redis |
 | lruCache.image.tag | string | `"6.2.6"` |  |
@@ -57,11 +57,11 @@ We do not recommend that you upgrade the application by overriding `image.tag`. 
 | nodeSelector | object | `{}` |  |
 | podAnnotations | object | `{}` | Annotations for the `Pod` |
 | podSecurityContext | object | `{"fsGroup":101337,"runAsGroup":101337,"runAsNonRoot":true,"runAsUser":101337}` | Pod-wide security context |
-| prometheus.podMonitors.enabled | bool | `false` | Enable monitoring by creating `PodMonitor` CRDs ([prometheus-operator](https://github.com/prometheus-operator/prometheus-operator)) |
-| prometheus.podMonitors.interval | string | `nil` |  |
-| prometheus.podMonitors.labels | object | `{}` |  |
-| prometheus.podMonitors.relabelings | list | `[]` |  |
-| prometheus.podMonitors.scrapeTimeout | string | `nil` |  |
+| prometheus.serviceMonitors.enabled | bool | `false` | Enable monitoring by creating `ServiceMonitor` CRDs ([prometheus-operator](https://github.com/prometheus-operator/prometheus-operator)) |
+| prometheus.serviceMonitors.interval | string | `nil` |  |
+| prometheus.serviceMonitors.labels | object | `{}` |  |
+| prometheus.serviceMonitors.relabelings | list | `[]` |  |
+| prometheus.serviceMonitors.scrapeTimeout | string | `nil` |  |
 | resources | object | `{}` |  |
 | service.ports.grpc-dshackle | int | `2449` | Service Port to expose the Dshackle gRPC API on |
 | service.ports.http-jsonrpc | int | `8545` | Service Port to expose the JSON-RPC API on |
@@ -71,18 +71,7 @@ We do not recommend that you upgrade the application by overriding `image.tag`. 
 | serviceAccount.name | string | `""` | The name of the service account to use. If not set and create is true, a name is generated using the fullname template |
 | terminationGracePeriodSeconds | int | `30` | Amount of time to wait before force-killing containers |
 | tolerations | list | `[]` |  |
-| upstreams[0].chain | string | `"ethereum"` |  |
-| upstreams[0].connection.ethereum.rpc.url | string | `"http://eth-mainnet-erigon-rpcdaemons:8545"` |  |
-| upstreams[0].connection.ethereum.ws.frameSize | string | `"32mb"` |  |
-| upstreams[0].connection.ethereum.ws.msgSize | string | `"256mb"` |  |
-| upstreams[0].connection.ethereum.ws.url | string | `"ws://eth-mainnet-erigon-rpcdaemons:8545"` |  |
-| upstreams[0].id | string | `"local"` |  |
-| upstreams[0].labels | object | `{}` |  |
-| upstreams[0].methods.enabled[0].name | string | `"eth_chainId"` |  |
-| upstreams[0].methods.enabled[0].static | string | `"0x1"` |  |
-| upstreams[0].methods.enabled[1].name | string | `"eth_getLogs"` |  |
-| upstreams[0].methods.enabled[2].name | string | `"trace_filter"` |  |
-| upstreams[0].role | string | `"standard"` |  |
+| upstreams | list | `[]` |  |
 
 ## Contributing
 

@@ -41,7 +41,7 @@ spec:
           configMap:
             name: {{ include "dshackle.fullname" . }}-{{ $componentName }}
       containers:
-        - name: {{ .Chart.Name }}-{{ $componentName }}
+        - name: {{ $componentName }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           securityContext:
@@ -77,7 +77,7 @@ spec:
           resources:
             {{- toYaml $values.resources | nindent 12 }}
         {{- if $values.lruCache }}
-        - name: {{ .Chart.Name }}-{{ $componentName }}-redis
+        - name: {{ $componentName }}-redis
           image: "{{ $values.lruCache.image.repository }}:{{ $values.lruCache.image.tag }}"
           imagePullPolicy: {{ $values.lruCache.image.pullPolicy }}
           securityContext:
