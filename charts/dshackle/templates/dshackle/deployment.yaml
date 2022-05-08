@@ -41,41 +41,6 @@ spec:
           configMap:
             name: {{ include "dshackle.fullname" . }}-{{ $componentName }}
       containers:
-        - name: {{ $componentName }}
-          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
-          imagePullPolicy: {{ .Values.image.pullPolicy }}
-          securityContext:
-            readOnlyRootFilesystem: true
-            capabilities:
-              drop:
-                - ALL
-          {{- with $values.extraArgs }}
-          command:
-            {{- toYaml (. | default list) | nindent 12 }}
-          {{- end }}
-          volumeMounts:
-            - name: config
-              mountPath: "/etc/dshackle"
-              readOnly: true
-          ports:
-            - name: http-jsonrpc
-              containerPort: 8545
-              protocol: TCP
-            - name: http-metrics
-              containerPort: 8081
-              protocol: TCP
-            - name: http-health
-              containerPort: 8082
-              protocol: TCP
-            - name: grpc-dshackle
-              containerPort: 2449
-              protocol: TCP
-          readinessProbe:
-            httpGet:
-              port: http-health
-              path: /health?detailed
-          resources:
-            {{- toYaml $values.resources | nindent 12 }}
         {{- if $values.lruCache.enabled }}
         - name: {{ $componentName }}-redis
           image: "{{ $values.lruCache.image.repository }}:{{ $values.lruCache.image.tag }}"
@@ -125,6 +90,41 @@ spec:
             {{- toYaml . | nindent 12 }}
           {{- end }}
         {{- end }}
+        - name: {{ $componentName }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          securityContext:
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          {{- with $values.extraArgs }}
+          command:
+            {{- toYaml (. | default list) | nindent 12 }}
+          {{- end }}
+          volumeMounts:
+            - name: config
+              mountPath: "/etc/dshackle"
+              readOnly: true
+          ports:
+            - name: http-jsonrpc
+              containerPort: 8545
+              protocol: TCP
+            - name: http-metrics
+              containerPort: 8081
+              protocol: TCP
+            - name: http-health
+              containerPort: 8082
+              protocol: TCP
+            - name: grpc-dshackle
+              containerPort: 2449
+              protocol: TCP
+          readinessProbe:
+            httpGet:
+              port: http-health
+              path: /health?detailed
+          resources:
+            {{- toYaml $values.resources | nindent 12 }}
       {{- with $values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
