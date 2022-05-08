@@ -73,10 +73,10 @@ spec:
           readinessProbe:
             httpGet:
               port: http-health
-              path: /health
+              path: /health?detailed
           resources:
             {{- toYaml $values.resources | nindent 12 }}
-        {{- if $values.lruCache }}
+        {{- if $values.lruCache.enabled }}
         - name: {{ $componentName }}-redis
           image: "{{ $values.lruCache.image.repository }}:{{ $values.lruCache.image.tag }}"
           imagePullPolicy: {{ $values.lruCache.image.pullPolicy }}
@@ -91,11 +91,35 @@ spec:
             - --appendonly no # disable persistence
             - --maxmemory-policy allkeys-lru # lru cache mode
             - --maxmemory {{ $values.lruCache.cacheSizeGB }}gb
+          ports:
+            - name: tcp-redis
+              containerPort: 6379
+              protocol: TCP
           readinessProbe:
             exec:
               command:
               - redis-cli
               - ping
+          {{- with $values.lruCache.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+        - name: {{ $componentName }}-redis-exporter
+          image: "{{ $values.lruCache.redisExporter.image.repository }}:{{ $values.lruCache.redisExporter.image.tag }}"
+          imagePullPolicy: {{ $values.lruCache.redisExporter.image.pullPolicy }}
+          securityContext:
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          ports:
+            - name: http-rmetrics
+              containerPort: 9121
+              protocol: TCP
+          readinessProbe:
+            httpGet:
+              port: http-rmetrics
+              path: /metrics
           {{- with $values.lruCache.resources }}
           resources:
             {{- toYaml . | nindent 12 }}
